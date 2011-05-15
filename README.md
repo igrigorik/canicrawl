@@ -17,7 +17,7 @@ Note: [blogger.com/robots.txt](http://blogger.com/robots.txt) blocks allow agent
 
 ## Notes
 
-Turk is an experiment with [Go](golang.org). Go's http stack is "async", hence many parallel requests can be processed at the same time. Turk also has naive, unbounded in-memory cache to avoid refetching the same robots.txt data for a given host.
+Turk is an experiment with [Go](http://golang.org/). Go's http stack is "async", hence many parallel requests can be processed at the same time. Turk also has naive, unbounded in-memory cache to avoid refetching the same robots.txt data for a given host.
 
 ### License
 
