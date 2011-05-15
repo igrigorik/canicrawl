@@ -2,8 +2,7 @@ package main
 
 import (
   "os"
-  "fmt"
-  // "log"
+  "log"
   "http"
   "io/ioutil"
   "github.com/temoto/robotstxt.go"
@@ -12,7 +11,7 @@ import (
 func handler(w http.ResponseWriter, r *http.Request) {
   error := func(msg string) {
     w.WriteHeader(400)
-    fmt.Fprintf(w, msg)
+    w.Write([]byte(msg))
   }
 
   query, _ := http.ParseQuery(r.URL.RawQuery)
@@ -24,7 +23,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  fmt.Printf("Handling request for %s, agent: %s\n", url, bot)
+  log.Printf("Handling request for %s, agent: %s\n", url, bot)
 
   uri, err := http.ParseURL(url[0])
   if err != nil {
@@ -39,7 +38,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  fmt.Printf("\tfetched robots.txt: %s, status code: %s \n", robotsUri, resp.StatusCode)
+  log.Printf("\tfetched robots.txt: %s, status code: %s \n", robotsUri, resp.StatusCode)
 
   body, _ := ioutil.ReadAll(resp.Body)
   robots, err := robotstxt.FromResponse(resp.StatusCode, string(body), true)
@@ -62,12 +61,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-  // log.Printf("Starting Turk server")
+  log.Println("Starting Turk server")
 
   http.HandleFunc("/", handler)
   err := http.ListenAndServe(":8080", nil)
   if err != nil {
-    fmt.Fprintf(os.Stderr, "ListenAndServe error: %s\n", err.String())
+    log.Println("ListenAndServe error: %s\n", err.String())
     os.Exit(1)
   }
 }
