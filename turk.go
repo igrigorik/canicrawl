@@ -4,6 +4,7 @@ import (
   "os"
   "log"
   "http"
+  "flag"
   "io/ioutil"
   "github.com/temoto/robotstxt.go"
 )
@@ -57,14 +58,29 @@ func handler(w http.ResponseWriter, r *http.Request) {
     // return 400 if robots.txt does not allow fetching this resource
     w.WriteHeader(400)
   }
+}
 
+var (
+  host = flag.String("host", "localhost:8080", "listening port and hostname that will appear in the urls")
+  help = flag.Bool("h", false, "show this help")
+)
+
+func usage() {
+  println("turk usage:")
+  flag.PrintDefaults()
+  os.Exit(2)
 }
 
 func main() {
-  log.Println("Starting Turk server")
+  flag.Parse()
+  if *help {
+    usage()
+  }
+
+  log.Println("Starting Turk server on " + *host)
 
   http.HandleFunc("/", handler)
-  err := http.ListenAndServe(":8080", nil)
+  err := http.ListenAndServe(*host, nil)
   if err != nil {
     log.Println("ListenAndServe error: %s\n", err.String())
     os.Exit(1)
