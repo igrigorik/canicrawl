@@ -9,6 +9,13 @@ import (
   "github.com/temoto/robotstxt.go"
 )
 
+func testAgent(path string, agent string, robots *robotstxt.RobotsData, w http.ResponseWriter) {
+  allow, err := robots.TestAgent(path, agent)
+  if (err != nil) || !allow {
+    w.WriteHeader(400)
+  }
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
   error := func(msg string) {
     w.WriteHeader(400)
@@ -33,6 +40,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
   }
 
   robotsUri := "http://" + uri.Host + "/robots.txt"
+  cached, ok := cache[robotsUri]
+  if ok {
+    log.Println("Found robots.txt data in cache for: ", robotsUri)
+
+    testAgent(uri.Path, bot[0], cached, w)
+    return
+  }
+
   resp, _, err := http.Get(robotsUri)
   if err != nil {
     error("Cannot fetch robots.txt: " + err.String())
@@ -44,25 +59,19 @@ func handler(w http.ResponseWriter, r *http.Request) {
   body, _ := ioutil.ReadAll(resp.Body)
   robots, err := robotstxt.FromResponse(resp.StatusCode, string(body), true)
   if err != nil {
-    error("Cannot parse robots file")
+    error("Cannot parse robots file: " + err.String())
     return
   }
 
-  allow, err := robots.TestAgent(uri.Path, bot[0])
-  if err != nil {
-    error("Error evaluating agent")
-    return
-  }
-
-  if !allow {
-    // return 400 if robots.txt does not allow fetching this resource
-    w.WriteHeader(400)
-  }
+  // cache for future requests
+  testAgent(uri.Path, bot[0], robots, w)
+  cache[robotsUri] = robots
 }
 
 var (
-  host = flag.String("host", "localhost:8080", "listening port and hostname that will appear in the urls")
-  help = flag.Bool("h", false, "show this help")
+  host  = flag.String("host", "localhost:8080", "listening port and hostname that will appear in the urls")
+  help  = flag.Bool("h", false, "show this help")
+  cache = map[string]*robotstxt.RobotsData{}
 )
 
 func usage() {
