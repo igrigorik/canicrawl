@@ -2,12 +2,20 @@ package main
 
 import (
   "os"
+  "gob"
   "log"
   "http"
   "flag"
+  "bytes"
   "io/ioutil"
   "github.com/temoto/robotstxt.go"
+  "github.com/kklis/gomemcache"
 )
+
+type Robot struct {
+  Resp string
+  Code int
+}
 
 func testAgent(path string, agent string, robots *robotstxt.RobotsData, w http.ResponseWriter) {
   allow, err := robots.TestAgent(path, agent)
@@ -40,11 +48,34 @@ func handler(w http.ResponseWriter, r *http.Request) {
   }
 
   robotsUri := "http://" + uri.Host + "/robots.txt"
-  cached, ok := cache[robotsUri]
-  if ok {
-    log.Println("Found robots.txt data in cache for: ", robotsUri)
 
-    testAgent(uri.Path, bot[0], cached, w)
+  // this is hardly efficient, but its a first pass..
+  // open a new memcache connection on each request and
+  // fetch the serialized robots rules
+  cache, err := memcache.Connect("127.0.0.1", 11211)
+  if err != nil {
+    error("Cannot connect to memcached: " + err.String())
+    return
+  }
+
+  data, _, err := cache.Get(robotsUri)
+  if data != nil {
+    log.Println("Found robots.txt data in cache for: ", robotsUri)
+    decoder := gob.NewDecoder(bytes.NewBuffer(data))
+
+    var robot Robot
+    err = decoder.Decode(&robot)
+    if err != nil {
+      log.Fatal("decode error:", err)
+    }
+
+    parsed, err := robotstxt.FromResponse(robot.Code, robot.Resp, true)
+    if err != nil {
+      error("Cannot parse robots file: " + err.String())
+      return
+    }
+
+    testAgent(uri.Path, bot[0], parsed, w)
     return
   }
 
@@ -64,14 +95,26 @@ func handler(w http.ResponseWriter, r *http.Request) {
   }
 
   // cache for future requests
+  var robotsGob bytes.Buffer
+  encoder := gob.NewEncoder(&robotsGob)
+  err = encoder.Encode(Robot{Code: resp.StatusCode, Resp: string(body)})
+  if err != nil {
+    error("Cannot gob robots file: " + err.String())
+    return
+  }
+
+  err = cache.Set(robotsUri, []uint8(robotsGob.String()), 0, 60*60*24*30)
+  if err != nil {
+    error("Cannot store robots gob in memcached: " + err.String())
+    return
+  }
+
   testAgent(uri.Path, bot[0], robots, w)
-  cache[robotsUri] = robots
 }
 
 var (
-  host  = flag.String("host", "localhost:8080", "listening port and hostname that will appear in the urls")
-  help  = flag.Bool("h", false, "show this help")
-  cache = map[string]*robotstxt.RobotsData{}
+  host = flag.String("host", "localhost:8080", "listening port and hostname that will appear in the urls")
+  help = flag.Bool("h", false, "show this help")
 )
 
 func usage() {

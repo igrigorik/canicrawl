@@ -4,6 +4,8 @@ Simple (Golang) HTTP web-service to verify whether a supplied "Agent" is allowed
 
 ```
 $> goinstall github.com/temoto/robotstxt.go
+$> goinstall github.com/kklis/gomemcache
+$>
 $> make && ./turk -host="localhost:9090"
 $>
 $> curl -v "http://127.0.0.1:9090/?agent=Googlebot&url=http://blogspot.com/comment.g"
