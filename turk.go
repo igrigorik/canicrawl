@@ -49,15 +49,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
   robotsUri := "http://" + uri.Host + "/robots.txt"
 
-  // this is hardly efficient, but its a first pass..
-  // open a new memcache connection on each request and
-  // fetch the serialized robots rules
-  cache, err := memcache.Connect("127.0.0.1", 11211)
-  if err != nil {
-    error("Cannot connect to memcached: " + err.String())
-    return
-  }
-
   data, _, err := cache.Get(robotsUri)
   if data != nil {
     log.Println("Found robots.txt data in cache for: ", robotsUri)
@@ -113,8 +104,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 var (
-  host = flag.String("host", "localhost:8080", "listening port and hostname that will appear in the urls")
-  help = flag.Bool("h", false, "show this help")
+  host  = flag.String("host", "localhost:8080", "listening port and hostname that will appear in the urls")
+  help  = flag.Bool("h", false, "show this help")
+  cache *memcache.Memcache
+  err os.Error
 )
 
 func usage() {
@@ -130,6 +123,12 @@ func main() {
   }
 
   log.Println("Starting Turk server on " + *host)
+
+  cache, err = memcache.Connect("127.0.0.1", 11211)
+  if err != nil {
+    log.Println("Cannot connect to memcache, error: ", err.String())
+    os.Exit(1)
+  }
 
   http.HandleFunc("/", handler)
   err := http.ListenAndServe(*host, nil)
