@@ -125,8 +125,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     decoder := gob.NewDecoder(bytes.NewBuffer(data))
 
     var robot Robot
-    err = decoder.Decode(&robot)
-    if err != nil {
+    if err = decoder.Decode(&robot); err != nil {
       log.Fatal("decode error:", err)
     }
 
@@ -158,14 +157,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
   // cache for future requests
   var robotsGob bytes.Buffer
   encoder := gob.NewEncoder(&robotsGob)
-  err = encoder.Encode(Robot{Code: resp.StatusCode, Resp: string(body)})
-  if err != nil {
+  if err = encoder.Encode(Robot{Code: resp.StatusCode, Resp: string(body)}); err != nil {
     error("Cannot gob robots file: " + err.String())
     return
   }
 
-  err = cache.conn.Set(robotsUri, []uint8(robotsGob.String()), 0, 60*60*24*30)
-  if err != nil {
+  if err = cache.conn.Set(robotsUri, []uint8(robotsGob.String()), 0, 60*60*24*30); err != nil {
     error("Cannot store robots gob in memcached: " + err.String())
     return
   }
@@ -186,6 +183,7 @@ func main() {
   }
 
   log.Println("Starting Turk server on " + *host)
+
   pool = NewDialPool("127.0.0.1", 11211, 10)
 
   http.HandleFunc("/", handler)
