@@ -15,6 +15,7 @@ import (
 var (
   host = flag.String("host", "localhost:8080", "listening port and hostname that will appear in the urls")
   help = flag.Bool("h", false, "show this help")
+  logf  = flag.String("log", "turk.log", "name and location of logfile")
   pool *Pool
 )
 
@@ -183,6 +184,9 @@ func main() {
   }
 
   log.Println("Starting Turk server on " + *host)
+
+  out, _ := os.OpenFile(*logf, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+  log.SetOutput(out)
 
   pool = NewDialPool("127.0.0.1", 11211, 10)
 
