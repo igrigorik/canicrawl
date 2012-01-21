@@ -2,36 +2,13 @@ package turk
 
 import (
   "appengine"
-  "appengine/urlfetch"  
+  "appengine/urlfetch"
   "robotstxt.go"
   "io/ioutil"
   "http"
   "json"
   "url"
 )
-
-func testAgent(path string, agent string, robots *robotstxt.RobotsData, w http.ResponseWriter) {
-  allow, err := robots.TestAgent(path, agent)
-  if (err != nil) || !allow {
-    
-    reply := map[string] string {
-        "status":  "disallowed",
-    }
-    resp, _ := json.Marshal(reply)
-    
-    w.WriteHeader(400)
-    w.Write(resp)      
-    return
-  }
-  
-  reply := map[string] string {
-      "status":  "ok",
-  }
-  resp, _ := json.Marshal(reply)
-    
-  w.WriteHeader(200)
-  w.Write(resp)  
-}
 
 func handler(w http.ResponseWriter, r *http.Request) {
   c := appengine.NewContext(r)
@@ -42,7 +19,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
         "error":  msg,
     }
     resp, _ := json.Marshal(reply)
-    
+
     w.WriteHeader(500)
     w.Write(resp)
   }
@@ -69,22 +46,36 @@ func handler(w http.ResponseWriter, r *http.Request) {
   client := urlfetch.Client(c)
   resp, err := client.Get(robotsUrl)
   if err != nil {
-      error("cannot fetch robots.txt: " + err.String())      
+      error("cannot fetch robots.txt: " + err.String())
       return
   }
-      
+
   c.Infof("Fetched robots.txt: %s, status code: %s \n", robotsUrl, resp.StatusCode)
 
   defer resp.Body.Close()
   body, _ := ioutil.ReadAll(resp.Body)
-  
+
   robots, err := robotstxt.FromResponse(resp.StatusCode, string(body), true)
   if err != nil {
     error("cannot parse robots file: " + err.String())
     return
   }
 
-  testAgent(parsed_url.Path, req_bot[0], robots, w)
+  allow, err := robots.TestAgent(parsed_url.Path, req_bot[0])
+  if (err != nil) || !allow {
+
+    reply := map[string] string {
+        "status":  "disallowed",
+    }
+    resp, _ := json.Marshal(reply)
+
+    w.WriteHeader(400)
+    w.Write(resp)
+    return
+  }
+
+  w.Header().Set("Location", req_url[0])
+  w.WriteHeader(http.StatusFound)
 }
 
 func init() {
