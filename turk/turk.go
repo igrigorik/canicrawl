@@ -26,14 +26,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
   query, _ := url.ParseQuery(r.URL.RawQuery)
 
+  req_agent := r.Header.Get("User-Agent")
   req_url, ok_url := query["url"]
-  req_bot, ok_bot := query["agent"]
-  if !ok_url || !ok_bot {
-    error("required parameters: url, agent")
+
+  if !ok_url {
+    error("required parameters: url")
     return
   }
 
-  c.Infof("Handling request for %s, agent: %s\n", req_url, req_bot)
+  c.Infof("Handling request for %s, agent: %s\n", req_url, req_agent)
 
   parsed_url, err := url.Parse(req_url[0])
   if err != nil {
@@ -61,7 +62,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  allow, err := robots.TestAgent(parsed_url.Path, req_bot[0])
+  allow, err := robots.TestAgent(parsed_url.Path, req_agent)
   if (err != nil) || !allow {
 
     reply := map[string] string {
