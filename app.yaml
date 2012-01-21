@@ -1,5 +1,5 @@
 application: canicrawl
-version: 1
+version: 2
 runtime: go
 api_version: 3
 

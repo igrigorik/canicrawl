@@ -1,26 +1,34 @@
-# Turk: robots.txt permission verifier
+# Can I Crawl (this URL)
 
-Simple (Golang) HTTP web-service to verify whether a supplied "Agent" is allowed to access the requested URL. Pass in the URL of the resource you want to fetch and the name of your agent and Turk will download, parse the robots.txt file and respond with a 200 if you can proceed, and 400 otherwise.
+Hosted robots.txt permissions verifier.
 
-```
-$> goinstall github.com/temoto/robotstxt.go
-$> goinstall github.com/kklis/gomemcache
-$>
-$> make && ./turk -host="localhost:9090"
-$>
-$> curl -v "http://127.0.0.1:9090/?agent=Googlebot&url=http://blogspot.com/comment.g"
-   < HTTP/1.1 400 Bad Request
+## ENDPOINTS
 
-$> curl -v "http://127.0.0.1:9090/?agent=Googlebot&url=http://blogspot.com/"
-   < HTTP/1.1 200 OK
-```
+- [`/`](http://canicrawl.appspot.com/) This page.
+- [`/check`](http://canicrawl.appspot.com/check) Runs the robots.txt verification check.
 
-Note: [blogger.com/robots.txt](http://blogger.com/robots.txt) blocks allow agents from fetching `comment.g` resource.
+## Description
 
-## Notes
+Verifies if the provided URL is allowed to be crawled by your User-Agent. Pass in the destination URL and the service will download, parse and check the [robots.txt](http://www.robotstxt.org/) file for permissions. If you're allowed to continue, it will issue a **3XX** redirect, otherwise a **4XX** code is returned.
 
-Turk is an experiment with [Go](http://golang.org/). Go's http stack is "async", hence many parallel requests can be processed at the same time. Turk also has naive, unbounded in-memory cache to avoid refetching the same robots.txt data for a given host.
+## Examples
+
+### $ curl -v http://canicrawl.appspot.com/check?url=http://google.com/
+	< HTTP/1.0 302 Found
+	< Location: http://www.google.com/
+
+### $ curl -v http://canicrawl.appspot.com/check?url=http://google.com/search
+	< HTTP/1.0 400 Bad Request
+	< Content-Length: 23
+	{"status":"disallowed"}
+
+### $ curl -H'User-Agent: MyCustomAgent' -v http://canicrawl.appspot.com/check?url=http://google.com/
+	> User-Agent: MyCustomAgent
+	< HTTP/1.0 302 Found
+	< Location: http://www.google.com/
+
+Note: [google.com/robots.txt](http://google.com/robots.txt) disallows requests to _/search_.
 
 ### License
 
-(MIT License) - Copyright (c) 2011 Ilya Grigorik
+MIT License - Copyright (c) 2011 [Ilya Grigorik](http://www.igvita.com/)
