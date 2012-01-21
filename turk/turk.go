@@ -80,5 +80,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func init() {
-    http.HandleFunc("/", handler)
+    http.Handle("/", http.FileServer(http.Dir("static")))
+    http.HandleFunc("/check", handler)
 }
