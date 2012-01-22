@@ -20,7 +20,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     }
     resp, _ := json.Marshal(reply)
 
-    w.WriteHeader(500)
+    w.WriteHeader(http.StatusInternalServerError)
     w.Write(resp)
   }
 
