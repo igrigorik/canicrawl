@@ -70,7 +70,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
     }
     resp, _ := json.Marshal(reply)
 
-    w.WriteHeader(400)
+    w.WriteHeader(http.StatusForbidden)
     w.Write(resp)
     return
   }
