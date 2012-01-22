@@ -18,7 +18,7 @@ Verifies if the provided URL is allowed to be crawled by your User-Agent. Pass i
 	< Location: http://www.google.com/
 
 ### $ curl -v http://canicrawl.appspot.com/check?url=http://google.com/search
-	< HTTP/1.0 400 Bad Request
+	< HTTP/1.0 403 Forbidden
 	< Content-Length: 23
 	{"status":"disallowed"}
 
